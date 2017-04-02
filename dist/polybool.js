@@ -280,12 +280,7 @@ function Epsilon(eps){
 			return my.slope(left, right) <= my.slope(left, p);
 		},
 		pointBetween: function(p, left, right){
-			// p must be collinear with left->right
-			// returns false if p == left, p == right, or left == right
-			return my.slopesEqual(left, right, left, p) &&
-				!(my.pointsSame(left, right)) &&
-				(my.deltaX(left, p) > 0 && my.deltaY(left, p) > 0) &&
-				(my.deltaX(right, p) < 0 && my.deltaY(right, p) < 0);
+			return my.intersectionAlong(p, left, right) === 0;
 		},
 		pointsSameX: function(p1, p2){
 			return my.deltaX(p1, p2) === 0;
