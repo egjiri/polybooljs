@@ -251,42 +251,47 @@ function Epsilon(eps){
 				eps = v;
 			return eps;
 		},
-		pointAboveOrOnLine: function(pt, left, right){
-			var Ax = left[0];
-			var Ay = left[1];
-			var Bx = right[0];
-			var By = right[1];
-			var Cx = pt[0];
-			var Cy = pt[1];
-			return (Bx - Ax) * (Cy - Ay) - (By - Ay) * (Cx - Ax) >= -eps;
+		round: function(v){
+			var factor = 1 / eps;
+			return Math.round(v * factor) / factor;
+		},
+		delta: function(v1, v2){
+			return my.round(v2 - v1);
+		},
+		equal: function(v1, v2){
+			return my.delta(v1, v2) === 0;
+		},
+		deltaX: function(p1, p2){
+			return my.delta(p1[0], p2[0]);
+		},
+		deltaY: function(p1, p2){
+			return my.delta(p1[1], p2[1]);
+		},
+		slope: function(p1, p2){
+			return my.deltaY(p1, p2) / my.deltaX(p1, p2);
+		},
+		slopesDelta: function(a0, a1, b0, b1){
+			return my.delta(my.slope(a0, a1), my.slope(b0, b1));
+		},
+		slopesEqual: function(a0, a1, b0, b1){
+			return my.slopesDelta(a0, a1, b0, b1) === 0;
+		},
+		pointAboveOrOnLine: function(p, left, right){
+			return my.slope(left, right) <= my.slope(left, p);
 		},
 		pointBetween: function(p, left, right){
 			// p must be collinear with left->right
 			// returns false if p == left, p == right, or left == right
-			var d_py_ly = p[1] - left[1];
-			var d_rx_lx = right[0] - left[0];
-			var d_px_lx = p[0] - left[0];
-			var d_ry_ly = right[1] - left[1];
-
-			var dot = d_px_lx * d_rx_lx + d_py_ly * d_ry_ly;
-			// if `dot` is 0, then `p` == `left` or `left` == `right` (reject)
-			// if `dot` is less than 0, then `p` is to the left of `left` (reject)
-			if (dot < eps)
-				return false;
-
-			var sqlen = d_rx_lx * d_rx_lx + d_ry_ly * d_ry_ly;
-			// if `dot` > `sqlen`, then `p` is to the right of `right` (reject)
-			// therefore, if `dot - sqlen` is greater than 0, then `p` is to the right of `right` (reject)
-			if (dot - sqlen > -eps)
-				return false;
-
-			return true;
+			return my.slopesEqual(left, right, left, p) &&
+				!(my.pointsSame(left, right)) &&
+				(my.deltaX(left, p) > 0 && my.deltaY(left, p) > 0) &&
+				(my.deltaX(right, p) < 0 && my.deltaY(right, p) < 0);
 		},
 		pointsSameX: function(p1, p2){
-			return Math.abs(p1[0] - p2[0]) < eps;
+			return my.deltaX(p1, p2) === 0;
 		},
 		pointsSameY: function(p1, p2){
-			return Math.abs(p1[1] - p2[1]) < eps;
+			return my.deltaY(p1, p2) === 0;
 		},
 		pointsSame: function(p1, p2){
 			return my.pointsSameX(p1, p2) && my.pointsSameY(p1, p2);
@@ -294,18 +299,14 @@ function Epsilon(eps){
 		pointsCompare: function(p1, p2){
 			// returns -1 if p1 is smaller, 1 if p2 is smaller, 0 if equal
 			if (my.pointsSameX(p1, p2))
-				return my.pointsSameY(p1, p2) ? 0 : (p1[1] < p2[1] ? -1 : 1);
-			return p1[0] < p2[0] ? -1 : 1;
+				return my.pointsSameY(p1, p2) ? 0 : (my.deltaY(p1, p2) > 0 ? -1 : 1);
+			return my.deltaX(p1, p2) > 0 ? -1 : 1;
 		},
-		pointsCollinear: function(pt1, pt2, pt3){
-			// does pt1->pt2->pt3 make a straight line?
-			// essentially this is just checking to see if the slope(pt1->pt2) === slope(pt2->pt3)
-			// if slopes are equal, then they must be collinear, because they share pt2
-			var dx1 = pt1[0] - pt2[0];
-			var dy1 = pt1[1] - pt2[1];
-			var dx2 = pt2[0] - pt3[0];
-			var dy2 = pt2[1] - pt3[1];
-			return Math.abs(dx1 * dy2 - dx2 * dy1) < eps;
+		pointsCollinear: function(p1, p2, p3){
+			// does p1->p2->p3 make a straight line?
+			// essentially this is just checking to see if the slope(p1->p2) === slope(p2->p3)
+			// if slopes are equal, then they must be collinear, because they share p2
+			return my.pointsSame(p1, p2) || my.pointsSame(p2, p3) || my.pointsSame(p1, p3) || my.slopesEqual(p1, p2, p2, p3);
 		},
 		linesIntersect: function(a0, a1, b0, b1){
 			// returns false if the lines are coincident (e.g., parallel or on top of each other)
@@ -326,55 +327,54 @@ function Epsilon(eps){
 			//     0   intersection point is between segment's first and second points (exclusive)
 			//     1   intersection point is directly on segment's second point
 			//     2   intersection point is after segment's second point
-			var adx = a1[0] - a0[0];
-			var ady = a1[1] - a0[1];
-			var bdx = b1[0] - b0[0];
-			var bdy = b1[1] - b0[1];
-
-			var axb = adx * bdy - ady * bdx;
-			if (Math.abs(axb) < eps)
+			if (my.slopesEqual(a0, a1, b0, b1))
 				return false; // lines are coincident
 
-			var dx = a0[0] - b0[0];
-			var dy = a0[1] - b0[1];
+			var pt = my.intersectionPoint(a0, a1, b0, b1)
+			return {
+				pt: pt,
+				alongA: my.intersectionAlong(pt, a0, a1),
+				alongB: my.intersectionAlong(pt, b0, b1),
+			};
+		},
+		intersectionPoint: function(a0, a1, b0, b1) {
+			var adx = my.deltaX(a0, a1);
+			var ady = my.deltaY(a0, a1);
+			var bdx = my.deltaX(b0, b1);
+			var bdy = my.deltaY(b0, b1);
+
+			var axb = adx * bdy - ady * bdx;
+
+			var dx = my.deltaX(b0, a0);
+			var dy = my.deltaY(b0, a0);
 
 			var A = (bdx * dy - bdy * dx) / axb;
-			var B = (adx * dy - ady * dx) / axb;
 
-			var ret = {
-				alongA: 0,
-				alongB: 0,
-				pt: [
-					a0[0] + A * adx,
-					a0[1] + A * ady
-				]
-			};
-
-			// categorize where intersection point is along A and B
-
-			if (A <= -eps)
-				ret.alongA = -2;
-			else if (A < eps)
-				ret.alongA = -1;
-			else if (A - 1 <= -eps)
-				ret.alongA = 0;
-			else if (A - 1 < eps)
-				ret.alongA = 1;
+			return [
+				a0[0] + A * adx,
+				a0[1] + A * ady
+			];
+		},
+		intersectionAlong: function(pt, left, right) {
+			var p = pt[0];
+			var l = left[0];
+			var r = right[0];
+			// Default compare on X coodinates and if they are the same (vertical line), compare on Ys.
+			if (my.equal(l, r)) {
+				p = pt[1];
+				l = left[1];
+				r = right[1];
+			}
+			if (my.delta(p, l) > 0)
+				return -2;
+			else if (my.equal(p, l))
+				return -1;
+			else if (my.delta(p, l) < 0 && my.delta(p, r) > 0)
+				return 0;
+			else if (my.equal(p, r))
+				return 1;
 			else
-				ret.alongA = 2;
-
-			if (B <= -eps)
-				ret.alongB = -2;
-			else if (B < eps)
-				ret.alongB = -1;
-			else if (B - 1 <= -eps)
-				ret.alongB = 0;
-			else if (B - 1 < eps)
-				ret.alongB = 1;
-			else
-				ret.alongB = 2;
-
-			return ret;
+				return 2;
 		}
 	};
 	return my;

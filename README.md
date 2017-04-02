@@ -2,6 +2,14 @@
 
 Boolean operations on polygons (union, intersection, difference, xor)
 
+# Fork Remaining Issues:
+[Browser Test Cases](https://rawgit.com/voidqk/polybooljs/master/dist/demo.html)
+- Example 11 (all operations): Console Error
+- Example 12, 13 (all operations): Incorrect output
+- Example 6,7,9,14 (red - blue): extra line that shouldn't be there
+- Example 3 (blue - red): extra line that shouldn't be there
+- Example 3,5,6,7,9,14 (xor): extra line that shouldn't be there
+
 # Features
 
 1. Clips polygons for all boolean operations
