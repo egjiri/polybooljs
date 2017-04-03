@@ -301,7 +301,8 @@ function Epsilon(eps){
 			// does p1->p2->p3 make a straight line?
 			// essentially this is just checking to see if the slope(p1->p2) === slope(p2->p3)
 			// if slopes are equal, then they must be collinear, because they share p2
-			return my.pointsSame(p1, p2) || my.pointsSame(p2, p3) || my.pointsSame(p1, p3) || my.slopesEqual(p1, p2, p2, p3);
+			return my.pointsSame(p1, p2) || my.pointsSame(p2, p3) || my.pointsSame(p1, p3) ||
+				(my.pointsSameX(p1, p2) && my.pointsSameX(p2, p3)) || my.slopesEqual(p1, p2, p2, p3);
 		},
 		linesIntersect: function(a0, a1, b0, b1){
 			// returns false if the lines are coincident (e.g., parallel or on top of each other)
